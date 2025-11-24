@@ -18,7 +18,7 @@ This document provides detailed examples of using Auto Mock Tools in various sce
 
 ```bash
 # Start the proxy
-./bin/auto-proxy -target https://api.github.com -log-dir github-mocks -port 8080
+auto-proxy -target https://api.github.com -log-dir github-mocks -port 8080
 
 # In another terminal, make requests through the proxy
 curl http://localhost:8080/users/octocat
@@ -33,7 +33,7 @@ Mock files will be saved in `github-mocks/default/`.
 
 ```bash
 # Start the mock server
-./bin/auto-mock-server -mock-dir github-mocks -port 8000
+auto-mock-server -mock-dir github-mocks -port 8000
 
 # Test the mocks
 curl http://localhost:8000/users/octocat
@@ -46,7 +46,7 @@ curl http://localhost:8000/repos/httpx-record/auto-tools-go
 
 ```bash
 # Start proxy
-./bin/auto-proxy -target https://api.example.com -log-dir mocks
+auto-proxy -target https://api.example.com -log-dir mocks
 
 # Record scenario 1: authenticated user
 curl -H "x-mock-id: user-authenticated" \
@@ -65,7 +65,7 @@ curl -H "x-mock-id: user-admin" \
 
 ```bash
 # Start mock server
-./bin/auto-mock-server -mock-dir mocks
+auto-mock-server -mock-dir mocks
 
 # Test different scenarios
 curl -H "x-mock-id: user-authenticated" \
@@ -84,7 +84,7 @@ curl -H "x-mock-id: user-admin" \
 
 ```bash
 # Start proxy
-./bin/auto-proxy -target http://sse-server.com -log-dir sse-mocks
+auto-proxy -target http://sse-server.com -log-dir sse-mocks
 
 # Record SSE stream
 curl -N -H "Accept: text/event-stream" \
@@ -96,7 +96,7 @@ curl -N -H "Accept: text/event-stream" \
 
 ```bash
 # Replay with original timing and 10% jitter
-./bin/auto-mock-server \
+auto-mock-server \
     -mock-dir sse-mocks \
     -replay-timing \
     -jitter 0.1
@@ -111,7 +111,7 @@ curl -N -H "Accept: text/event-stream" \
 
 ```bash
 # Replay instantly (no delays)
-./bin/auto-mock-server -mock-dir sse-mocks
+auto-mock-server -mock-dir sse-mocks
 
 curl -N -H "Accept: text/event-stream" \
      -H "x-mock-id: live-updates" \
@@ -124,7 +124,7 @@ curl -N -H "Accept: text/event-stream" \
 
 ```bash
 # Start proxy with mTLS
-./bin/auto-proxy \
+auto-proxy \
     -target https://secure-api.example.com \
     -client-cert /path/to/client.crt \
     -client-key /path/to/client.key \
@@ -180,7 +180,7 @@ scenarios:
 
 ```bash
 # Start mock server with scenarios
-./bin/auto-mock-server \
+auto-mock-server \
     -mock-config scenarios.yml \
     -port 8000
 
@@ -308,7 +308,7 @@ FROM alpine:latest
 RUN apk --no-cache add ca-certificates
 COPY --from=builder /auto-proxy /usr/local/bin/
 COPY --from=builder /auto-mock-server /usr/local/bin/
-ENTRYPOINT ["/usr/local/bin/auto-mock-server"]
+ENTRYPOINT ["/usr/locaauto-mock-server"]
 ```
 
 ### Running with Docker
@@ -333,7 +333,7 @@ docker-compose down
 
 ```bash
 # Start mock server
-./bin/auto-mock-server -mock-dir mocks -host 0.0.0.0 -port 8000
+auto-mock-server -mock-dir mocks -host 0.0.0.0 -port 8000
 
 # Use wrk or ab for load testing
 wrk -t4 -c100 -d30s http://localhost:8000/api/endpoint
@@ -428,10 +428,10 @@ Currently, both tools output to stdout. Redirect to files for analysis:
 
 ```bash
 # Proxy with logging
-./bin/auto-proxy -target https://api.example.com 2>&1 | tee proxy.log
+auto-proxy -target https://api.example.com 2>&1 | tee proxy.log
 
 # Mock server with logging  
-./bin/auto-mock-server -mock-dir mocks 2>&1 | tee mock.log
+auto-mock-server -mock-dir mocks 2>&1 | tee mock.log
 ```
 
 ### Verify Mock Files

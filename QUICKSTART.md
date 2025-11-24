@@ -4,23 +4,32 @@ Get started with Auto Mock Tools in 5 minutes!
 
 ## Installation
 
+### Option 1: Run Directly (Recommended)
+
 ```bash
-# Clone and build
-git clone https://github.com/andrey-viktorov/auto-mock-tools.git
-cd auto-mock-tools
-make build
+# No installation needed!
+go run github.com/andrey-viktorov/auto-mock-tools/cmd/auto-proxy@latest -target http://api.example.com
 ```
 
-Binaries will be in `bin/`:
-- `bin/auto-proxy` - Recording proxy
-- `bin/auto-mock-server` - Mock server
+### Option 2: Install Globally
+
+```bash
+# Install once, use everywhere
+go install github.com/andrey-viktorov/auto-mock-tools/cmd/auto-proxy@latest
+go install github.com/andrey-viktorov/auto-mock-tools/cmd/auto-mock-server@latest
+```
 
 ## Record Your First Mock
 
 ### 1. Start the Proxy
 
 ```bash
-./bin/auto-proxy -target https://api.github.com -log-dir mocks
+# If installed
+auto-proxy -target https://api.github.com -log-dir mocks
+
+# Or run directly
+go run github.com/andrey-viktorov/auto-mock-tools/cmd/auto-proxy@latest \
+  -target https://api.github.com -log-dir mocks
 ```
 
 The proxy is now running on `http://localhost:8080`
@@ -43,7 +52,11 @@ Press `Ctrl+C` in the proxy terminal.
 ### 1. Start Mock Server
 
 ```bash
-./bin/auto-mock-server -mock-dir mocks
+# If installed
+auto-mock-server -mock-dir mocks
+
+# Or run directly
+go run github.com/andrey-viktorov/auto-mock-tools/cmd/auto-mock-server@latest -mock-dir mocks
 ```
 
 Mock server is now running on `http://localhost:8000`
@@ -65,7 +78,7 @@ Use the `x-mock-id` header to organize mocks:
 
 ```bash
 # Start proxy
-./bin/auto-proxy -target https://api.example.com -log-dir mocks
+auto-proxy -target https://api.example.com -log-dir mocks
 
 # Record scenario 1
 curl -H "x-mock-id: success-case" http://localhost:8080/api/endpoint
@@ -78,7 +91,7 @@ Use scenarios:
 
 ```bash
 # Start mock server
-./bin/auto-mock-server -mock-dir mocks
+auto-mock-server -mock-dir mocks
 
 # Get success case
 curl -H "x-mock-id: success-case" http://localhost:8000/api/endpoint
@@ -91,7 +104,7 @@ curl -H "x-mock-id: error-case" http://localhost:8000/api/endpoint
 
 ```bash
 # Start proxy
-./bin/auto-proxy -target http://sse-server.com -log-dir sse-mocks
+auto-proxy -target http://sse-server.com -log-dir sse-mocks
 
 # Record SSE
 curl -N -H "Accept: text/event-stream" http://localhost:8080/events
@@ -101,7 +114,7 @@ Replay with timing:
 
 ```bash
 # Replay with original timing
-./bin/auto-mock-server -mock-dir sse-mocks -replay-timing
+auto-mock-server -mock-dir sse-mocks -replay-timing
 
 curl -N -H "Accept: text/event-stream" http://localhost:8000/events
 ```
@@ -144,7 +157,7 @@ def test_get_user(api_client):
 # .github/workflows/test.yml
 - name: Start Mock Server
   run: |
-    ./bin/auto-mock-server -mock-dir test-mocks &
+    auto-mock-server -mock-dir test-mocks &
     sleep 2
 
 - name: Run Tests
@@ -204,10 +217,10 @@ curl http://localhost:8000/__mock__/list | jq .
 
 ```bash
 # Proxy help
-./bin/auto-proxy -h
+auto-proxy -h
 
 # Mock server help
-./bin/auto-mock-server -h
+auto-mock-server -h
 ```
 
 Happy mocking! 🚀

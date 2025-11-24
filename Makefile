@@ -22,16 +22,16 @@ build: build-proxy build-mock ## Build both proxy and mock server
 
 build-proxy: ## Build the recording proxy
 	@mkdir -p $(BIN_DIR)
-	go build -o $(PROXY_BINARY) -v ./cmd/proxy
+	go build -o $(PROXY_BINARY) -v ./cmd/auto-proxy
 
 build-mock: ## Build the mock server
 	@mkdir -p $(BIN_DIR)
-	go build -o $(MOCK_BINARY) -v ./cmd/mock
+	go build -o $(MOCK_BINARY) -v ./cmd/auto-mock-server
 
 build-optimized: ## Build optimized binaries (smaller size)
 	@mkdir -p $(BIN_DIR)
-	go build -ldflags="-s -w" -o $(PROXY_BINARY) -v ./cmd/proxy
-	go build -ldflags="-s -w" -o $(MOCK_BINARY) -v ./cmd/mock
+	go build -ldflags="-s -w" -o $(PROXY_BINARY) -v ./cmd/auto-proxy
+	go build -ldflags="-s -w" -o $(MOCK_BINARY) -v ./cmd/auto-mock-server
 
 # Run targets
 run-proxy: build-proxy ## Build and run the recording proxy
@@ -84,20 +84,20 @@ deps: ## Download and tidy dependencies
 # Platform-specific builds
 build-linux: ## Build for Linux (both tools)
 	@mkdir -p $(BIN_DIR)
-	GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o $(BIN_DIR)/auto-proxy-linux-amd64 ./cmd/proxy
-	GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o $(BIN_DIR)/auto-mock-server-linux-amd64 ./cmd/mock
+	GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o $(BIN_DIR)/auto-proxy-linux-amd64 ./cmd/auto-proxy
+	GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o $(BIN_DIR)/auto-mock-server-linux-amd64 ./cmd/auto-mock-server
 
 build-darwin: ## Build for macOS (both tools)
 	@mkdir -p $(BIN_DIR)
-	GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o $(BIN_DIR)/auto-proxy-darwin-amd64 ./cmd/proxy
-	GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o $(BIN_DIR)/auto-proxy-darwin-arm64 ./cmd/proxy
-	GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o $(BIN_DIR)/auto-mock-server-darwin-amd64 ./cmd/mock
-	GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o $(BIN_DIR)/auto-mock-server-darwin-arm64 ./cmd/mock
+	GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o $(BIN_DIR)/auto-proxy-darwin-amd64 ./cmd/auto-proxy
+	GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o $(BIN_DIR)/auto-proxy-darwin-arm64 ./cmd/auto-proxy
+	GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o $(BIN_DIR)/auto-mock-server-darwin-amd64 ./cmd/auto-mock-server
+	GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o $(BIN_DIR)/auto-mock-server-darwin-arm64 ./cmd/auto-mock-server
 
 build-windows: ## Build for Windows (both tools)
 	@mkdir -p $(BIN_DIR)
-	GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o $(BIN_DIR)/auto-proxy-windows-amd64.exe ./cmd/proxy
-	GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o $(BIN_DIR)/auto-mock-server-windows-amd64.exe ./cmd/mock
+	GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o $(BIN_DIR)/auto-proxy-windows-amd64.exe ./cmd/auto-proxy
+	GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o $(BIN_DIR)/auto-mock-server-windows-amd64.exe ./cmd/auto-mock-server
 
 build-all: build-linux build-darwin build-windows ## Build for all platforms
 

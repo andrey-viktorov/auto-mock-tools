@@ -50,36 +50,43 @@ auto-mock-tools/
 
 ## 📦 Installation
 
+### Quick Start (No Installation Required)
+
+Run directly without cloning or installing:
+
+```bash
+# Run recording proxy
+go run github.com/andrey-viktorov/auto-mock-tools/cmd/auto-proxy@latest -target http://api.example.com
+
+# Run mock server
+go run github.com/andrey-viktorov/auto-mock-tools/cmd/auto-mock-server@latest -mock-dir mocks
+```
+
+### Install Globally
+
+Install once, use everywhere:
+
+```bash
+# Install both tools
+go install github.com/andrey-viktorov/auto-mock-tools/cmd/auto-proxy@latest
+go install github.com/andrey-viktorov/auto-mock-tools/cmd/auto-mock-server@latest
+
+# Now use them anywhere
+auto-proxy -target http://api.example.com
+auto-mock-server -mock-dir mocks
+```
+
 ### From Source
 
 ```bash
-# Clone the repository
+# Clone and build
 git clone https://github.com/andrey-viktorov/auto-mock-tools.git
 cd auto-mock-tools
-
-# Build both tools
 make build
 
-# Or build individually
-make build-proxy
-make build-mock
-
-# Build optimized binaries (smaller size)
-make build-optimized
-```
-
-Binaries will be created in `bin/` directory:
-- `bin/auto-proxy` - Recording proxy
-- `bin/auto-mock-server` - Mock server
-
-### Using Go Install
-
-```bash
-# Install proxy
-go install github.com/andrey-viktorov/auto-mock-tools/cmd/proxy@latest
-
-# Install mock server
-go install github.com/andrey-viktorov/auto-mock-tools/cmd/mock@latest
+# Binaries will be in bin/
+./bin/auto-proxy -target http://api.example.com
+./bin/auto-mock-server -mock-dir mocks
 ```
 
 ### Pre-built Binaries
@@ -94,8 +101,12 @@ Download pre-built binaries for your platform from the [Releases](https://github
 ### 1. Record Traffic with Proxy
 
 ```bash
-# Start recording proxy (proxying to httpbin.org)
-./bin/auto-proxy -target http://httpbin.org -log-dir mocks -port 8080
+# Run directly (no installation)
+go run github.com/andrey-viktorov/auto-mock-tools/cmd/auto-proxy@latest \
+  -target http://httpbin.org -log-dir mocks -port 8080
+
+# Or if installed
+auto-proxy -target http://httpbin.org -log-dir mocks -port 8080
 
 # Make requests through the proxy
 curl http://localhost:8080/get
@@ -114,8 +125,12 @@ mocks/
 ### 2. Serve Mocks
 
 ```bash
-# Start mock server
-./bin/auto-mock-server -mock-dir mocks -port 8000
+# Run directly (no installation)
+go run github.com/andrey-viktorov/auto-mock-tools/cmd/auto-mock-server@latest \
+  -mock-dir mocks -port 8000
+
+# Or if installed
+auto-mock-server -mock-dir mocks -port 8000
 
 # Use the mocks
 curl http://localhost:8000/get
@@ -128,18 +143,18 @@ curl -H "x-mock-id: test-1" http://localhost:8000/post
 
 ```bash
 # Basic usage (target is REQUIRED)
-./bin/auto-proxy -target http://api.example.com
+auto-proxy -target http://api.example.com
 
 # Custom directory and port
-./bin/auto-proxy -target http://localhost:3000 -log-dir recordings -port 8888
+auto-proxy -target http://localhost:3000 -log-dir recordings -port 8888
 
 # With mTLS client certificate
-./bin/auto-proxy -target https://secure-api.com \
-             -client-cert client.crt \
-             -client-key client.key
+auto-proxy -target https://secure-api.com \
+  -client-cert client.crt \
+  -client-key client.key
 
 # On all interfaces
-./bin/auto-proxy -target http://api.example.com -host 0.0.0.0 -port 8080
+auto-proxy -target http://api.example.com -host 0.0.0.0 -port 8080
 ```
 
 **CLI Options:**
@@ -156,13 +171,13 @@ curl -H "x-mock-id: test-1" http://localhost:8000/post
 
 ```bash
 # Basic usage
-./bin/auto-mock-server -mock-dir mocks
+auto-mock-server -mock-dir mocks
 
 # Custom port and host
-./bin/auto-mock-server -mock-dir mocks -host 0.0.0.0 -port 9000
+auto-mock-server -mock-dir mocks -host 0.0.0.0 -port 9000
 
 # With timing replay and jitter
-./bin/auto-mock-server -mock-dir mocks -replay-timing -jitter 0.1
+auto-mock-server -mock-dir mocks -replay-timing -jitter 0.1
 ```
 
 **CLI Options:**
@@ -345,7 +360,7 @@ For SSE responses, events are stored with timestamps:
 
 ```bash
 # Start proxy
-./bin/auto-proxy -target http://sse-server.com -log-dir mocks
+auto-proxy -target http://sse-server.com -log-dir mocks
 
 # Record SSE stream
 curl -H "Accept: text/event-stream" \
@@ -357,13 +372,13 @@ curl -H "Accept: text/event-stream" \
 
 ```bash
 # Without timing replay (instant)
-./bin/auto-mock-server -mock-dir mocks
+auto-mock-server -mock-dir mocks
 
 # With timing replay (events sent at recorded intervals)
-./bin/auto-mock-server -mock-dir mocks -replay-timing
+auto-mock-server -mock-dir mocks -replay-timing
 
 # With timing + jitter (±10% variance)
-./bin/auto-mock-server -mock-dir mocks -replay-timing -jitter 0.1
+auto-mock-server -mock-dir mocks -replay-timing -jitter 0.1
 ```
 
 ```bash
@@ -431,8 +446,8 @@ make build-all
 ```
 auto-mock-tools/
 ├── cmd/
-│   ├── proxy/          # Recording proxy main
-│   └── mock/           # Mock server main
+│   ├── auto-proxy/     # Recording proxy main
+│   └── auto-mock-server/  # Mock server main
 ├── pkg/
 │   ├── storage/        # Shared storage logic
 │   ├── proxy/          # Proxy handler & recorder
