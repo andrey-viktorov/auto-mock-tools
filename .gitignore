@@ -1,0 +1,37 @@
+# Binaries
+bin/
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool
+*.out
+coverage.out
+mem.out
+
+# Go workspace file
+go.work
+
+# Mock files (uncomment if you don't want to commit mocks)
+# mocks/
+# recordings/
+
+# Logs
+*.log
+*.jsonl
+
+# Test artifacts
+tests/integration/test_mocks/
+tests/integration/test_workflow_mocks/
+testutils/bin/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db

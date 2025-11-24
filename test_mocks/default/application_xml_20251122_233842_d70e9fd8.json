@@ -1,0 +1,24 @@
+{
+  "request": {
+    "request_id": "bench-test-d70e9fd8",
+    "timestamp": "2025-11-22T20:00:00.000000Z",
+    "method": "GET",
+    "url": "http://api.example.com/xml",
+    "headers": {
+      "Accept": "*/*",
+      "x-mock-id": "default"
+    },
+    "body": ""
+  },
+  "response": {
+    "request_id": "bench-test-d70e9fd8",
+    "timestamp": "2025-11-22T20:00:00.100000Z",
+    "status_code": 200,
+    "headers": {
+      "Content-Type": "application/xml",
+      "x-mock-id": "default"
+    },
+    "body": "<root><data>test</data></root>",
+    "elapsed_seconds": 0.1
+  }
+}

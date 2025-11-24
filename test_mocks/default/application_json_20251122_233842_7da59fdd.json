@@ -1,0 +1,24 @@
+{
+  "request": {
+    "request_id": "bench-test-7da59fdd",
+    "timestamp": "2025-11-22T20:00:00.000000Z",
+    "method": "GET",
+    "url": "http://api.example.com/users/7",
+    "headers": {
+      "Accept": "*/*",
+      "x-mock-id": "default"
+    },
+    "body": ""
+  },
+  "response": {
+    "request_id": "bench-test-7da59fdd",
+    "timestamp": "2025-11-22T20:00:00.100000Z",
+    "status_code": 200,
+    "headers": {
+      "Content-Type": "application/json",
+      "x-mock-id": "default"
+    },
+    "body": {"id":7,"name":"User 7"},
+    "elapsed_seconds": 0.1
+  }
+}

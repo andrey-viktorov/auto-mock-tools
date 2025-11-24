@@ -1,0 +1,30 @@
+{
+  "request": {
+    "request_id": "sse-bench-5eb145cb",
+    "timestamp": "2025-11-22T20:00:00.000000Z",
+    "method": "GET",
+    "url": "http://api.example.com/events",
+    "headers": {
+      "Accept": "text/event-stream",
+      "x-mock-id": "default"
+    },
+    "body": ""
+  },
+  "response": {
+    "request_id": "sse-bench-5eb145cb",
+    "timestamp": "2025-11-22T20:00:05.000000Z",
+    "status_code": 200,
+    "headers": {
+      "Content-Type": "text/event-stream",
+      "x-mock-id": "default"
+    },
+    "body": [
+      {"data": {"event": 1, "value": "first"}, "timestamp": 0.1},
+      {"data": {"event": 2, "value": "second"}, "timestamp": 0.2},
+      {"data": {"event": 3, "value": "third"}, "timestamp": 0.3},
+      {"data": {"event": 4, "value": "fourth"}, "timestamp": 0.4},
+      {"data": {"event": 5, "value": "fifth"}, "timestamp": 0.5}
+    ],
+    "elapsed_seconds": 5.0
+  }
+}
