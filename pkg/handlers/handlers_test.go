@@ -132,7 +132,7 @@ func TestMockHandlerScenarioMode(t *testing.T) {
 		t.Fatalf("Failed to create storage: %v", err)
 	}
 
-	if err := store.LoadScenarioConfig("../../mock-example.yml"); err != nil {
+	if err := store.LoadScenarioConfig("../../tests/fixtures/mock-example.yml"); err != nil {
 		t.Fatalf("Failed to load scenarios: %v", err)
 	}
 

@@ -1,0 +1,7 @@
+scenarios:
+  - name: SSE Stream With Delay Override
+    method: GET
+    path: /stream
+    response:
+      file: ../../test_mocks/sse-test/text_event-stream_20251122_233842_35e6d6d3.json
+      delay: 1.0 # Override: original delay is 5.0s from elapsed_seconds

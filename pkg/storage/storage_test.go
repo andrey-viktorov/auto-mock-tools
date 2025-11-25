@@ -147,7 +147,7 @@ func TestScenarioConfigMatching(t *testing.T) {
 		t.Fatalf("Failed to create storage: %v", err)
 	}
 
-	if err := store.LoadScenarioConfig("../../mock-example.yml"); err != nil {
+	if err := store.LoadScenarioConfig("../../tests/fixtures/mock-example.yml"); err != nil {
 		t.Fatalf("Failed to load scenarios: %v", err)
 	}
 
@@ -171,5 +171,47 @@ func TestScenarioConfigMatching(t *testing.T) {
 	}
 	if fallback.MockID != "Status Fallback Default" {
 		t.Fatalf("Expected fallback scenario, got %s", fallback.MockID)
+	}
+}
+
+func TestSSEDelayOverride(t *testing.T) {
+	store, err := NewMockStorage("../../test_mocks")
+	if err != nil {
+		t.Fatalf("Failed to create storage: %v", err)
+	}
+
+	if err := store.LoadScenarioConfig("../../tests/fixtures/test-sse-delay-override.yml"); err != nil {
+		t.Fatalf("Failed to load scenario config: %v", err)
+	}
+
+	resp := store.MatchScenarioResponse([]byte("/stream"), []byte("GET"), []byte(""))
+	if resp == nil {
+		t.Fatal("Expected SSE scenario match")
+	}
+
+	if !resp.IsSSE {
+		t.Fatal("Expected SSE response")
+	}
+
+	// Check that delay was overridden
+	if resp.Delay != 1.0 {
+		t.Fatalf("Expected delay to be 1.0, got %f", resp.Delay)
+	}
+
+	// Check that event timestamps were scaled proportionally
+	// Original: 0.1, 0.2, 0.3, 0.4, 0.5 with total delay 5.0
+	// After override to 1.0: should be scaled by 1.0/5.0 = 0.2
+	expectedTimestamps := []float64{0.02, 0.04, 0.06, 0.08, 0.10}
+
+	if len(resp.SSEEvents) != len(expectedTimestamps) {
+		t.Fatalf("Expected %d events, got %d", len(expectedTimestamps), len(resp.SSEEvents))
+	}
+
+	for i, expected := range expectedTimestamps {
+		actual := resp.SSEEvents[i].Timestamp
+		// Allow small floating point tolerance
+		if actual < expected-0.001 || actual > expected+0.001 {
+			t.Fatalf("Event %d: expected timestamp %f, got %f", i+1, expected, actual)
+		}
 	}
 }

@@ -1,0 +1,6 @@
+scenarios:
+  - name: SSE Jitter Test Original
+    method: GET
+    path: /sse-stream
+    response:
+      file: ../../test_mocks/jitter-test/text_event-stream_jitter_test.json

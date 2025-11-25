@@ -12,7 +12,7 @@ scenarios:
               field: payload.id
               value: ^[A-Z]{3}-[0-9]{4}$
     response:
-      file: test_mocks/api-v1/application_json_20251122_233842_8e3ce990.json
+      file: ../../test_mocks/api-v1/application_json_20251122_233842_8e3ce990.json
       # Optional: override delay from the log file
       # For SSE responses, timing will be redistributed proportionally across events
       # delay: 2.0
@@ -23,4 +23,4 @@ scenarios:
     # Empty filter === match any JSON body. This scenario runs after
     # "Status Ready With Valid ID" thanks to declaration order.
     response:
-      file: test_mocks/default/application_json_20251122_233842_059b6fbd.json
+      file: ../../test_mocks/default/application_json_20251122_233842_059b6fbd.json

@@ -56,8 +56,8 @@ func trimSpaceASCII(s []byte) []byte {
 // Using sync.Pool reduces memory allocations by ~30% (1595 -> 1105 bytes per request).
 // The pool reuses writer objects instead of creating new ones for each SSE request.
 type sseStreamWriter struct {
-	events []storage.SSEEvent
-	jitter float64
+	events      []storage.SSEEvent
+	jitterScale float64 // Computed once per request: 1.0 + random jitter
 }
 
 // StreamTo writes SSE events to the writer with timing delays
@@ -69,17 +69,12 @@ func (sw *sseStreamWriter) StreamTo(w *bufio.Writer) {
 	for i := range sw.events {
 		event := &sw.events[i]
 
-		// // Calculate when this event should be sent
-		targetTime := startTime.Add(time.Duration(event.Timestamp * float64(time.Second)))
+		// Event timestamps are already scaled (either from original recording or from delay override in config)
+		// We only apply jitter scale here, which affects all events proportionally
+		effectiveTimestamp := event.Timestamp * sw.jitterScale
+		targetTime := startTime.Add(time.Duration(effectiveTimestamp * float64(time.Second)))
 
-		// Apply jitter if configured
-		if sw.jitter > 0 {
-			jitterRange := event.Timestamp * sw.jitter
-			jitterAmount := (rand.Float64()*2 - 1) * jitterRange
-			targetTime = targetTime.Add(time.Duration(jitterAmount * float64(time.Second)))
-		}
-
-		// // Wait until target time
+		// Wait until target time
 		time.Sleep(time.Until(targetTime))
 
 		// Send event - use []byte to avoid string allocations
@@ -201,9 +196,18 @@ func MockHandler(store *storage.MockStorage) fasthttp.RequestHandler {
 				// Get writer from pool - reduces allocations by reusing objects
 				writer := sseStreamPool.Get().(*sseStreamWriter)
 				writer.events = mockResponse.SSEEvents
-				// Move time.Now() into StreamTo to delay the allocation until streaming actually starts
-				// This keeps the hot path (request handling) allocation-free
-				writer.jitter = store.Jitter
+
+				// Calculate jitter scale once for all events in this request
+				// Jitter is applied proportionally to all event timestamps
+				// Event timestamps are already properly scaled from config loading (scenario.go)
+				writer.jitterScale = 1.0
+				if store.Jitter > 0 {
+					jitterAmount := (rand.Float64()*2 - 1) * store.Jitter // -jitter to +jitter
+					writer.jitterScale = 1.0 + jitterAmount
+					if writer.jitterScale < 0 {
+						writer.jitterScale = 0
+					}
+				}
 
 				// Pass method as stream writer - this creates a method value (small allocation)
 				// but avoids closure allocation that would capture all local variables

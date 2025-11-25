@@ -1,0 +1,7 @@
+scenarios:
+  - name: SSE Jitter Test With Delay Override
+    method: GET
+    path: /sse-stream
+    response:
+      file: ../../test_mocks/jitter-test/text_event-stream_jitter_test.json
+      delay: 0.5

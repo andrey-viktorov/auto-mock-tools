@@ -1,0 +1,51 @@
+name: Auto Tag on Version Change
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'VERSION'
+
+permissions:
+  contents: write
+
+jobs:
+  auto-tag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Read version from VERSION file
+        id: version
+        run: |
+          if [ -f VERSION ]; then
+            VERSION=$(cat VERSION | tr -d '[:space:]')
+            echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+            echo "Found version: $VERSION"
+          else
+            echo "Error: VERSION file not found"
+            exit 1
+          fi
+
+      - name: Check if tag exists
+        id: check_tag
+        run: |
+          if git rev-parse "v${{ steps.version.outputs.VERSION }}" >/dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "Tag v${{ steps.version.outputs.VERSION }} already exists, skipping"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "Tag v${{ steps.version.outputs.VERSION }} does not exist, will create"
+          fi
+
+      - name: Create and push tag
+        if: steps.check_tag.outputs.exists == 'false'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "v${{ steps.version.outputs.VERSION }}" -m "Release v${{ steps.version.outputs.VERSION }}"
+          git push origin "v${{ steps.version.outputs.VERSION }}"

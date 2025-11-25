@@ -9,51 +9,75 @@ permissions:
   contents: write
 
 jobs:
-  release:
-    name: Create Release
+  build-and-release:
     runs-on: ubuntu-latest
-    
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-    - name: Set up Go
-      uses: actions/setup-go@v5
-      with:
-        go-version: '1.23'
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
 
-    - name: Build binaries for all platforms
-      run: make build-all
+      - name: Get version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
 
-    - name: Create checksums
-      run: |
-        cd bin
-        sha256sum * > checksums.txt
-        cd ..
+      - name: Build binaries for all platforms
+        run: make build-all
 
-    - name: Extract release notes
-      id: extract-release-notes
-      run: |
-        VERSION=${GITHUB_REF#refs/tags/}
-        echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
-        
-        # Extract changelog section for this version
-        sed -n "/## \[$VERSION\]/,/## \[/p" CHANGELOG.md | sed '$d' > release-notes.md
-        
-        # If release notes are empty, use a default message
-        if [ ! -s release-notes.md ]; then
-          echo "Release $VERSION" > release-notes.md
-        fi
+      - name: Create archives
+        run: |
+          cd bin
+          # Linux
+          tar czf auto-tools-${{ steps.version.outputs.VERSION }}-linux-amd64.tar.gz auto-proxy-linux-amd64 auto-mock-server-linux-amd64
+          
+          # macOS amd64
+          tar czf auto-tools-${{ steps.version.outputs.VERSION }}-darwin-amd64.tar.gz auto-proxy-darwin-amd64 auto-mock-server-darwin-amd64
+          
+          # macOS arm64
+          tar czf auto-tools-${{ steps.version.outputs.VERSION }}-darwin-arm64.tar.gz auto-proxy-darwin-arm64 auto-mock-server-darwin-arm64
+          
+          # Windows
+          zip auto-tools-${{ steps.version.outputs.VERSION }}-windows-amd64.zip auto-proxy-windows-amd64.exe auto-mock-server-windows-amd64.exe
 
-    - name: Create Release
-      uses: softprops/action-gh-release@v1
-      with:
-        body_path: release-notes.md
-        files: |
-          bin/*
-        draft: false
-        prerelease: ${{ contains(github.ref, 'alpha') || contains(github.ref, 'beta') || contains(github.ref, 'rc') }}
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Generate checksums
+        run: |
+          cd bin
+          sha256sum auto-tools-${{ steps.version.outputs.VERSION }}-*.tar.gz auto-tools-${{ steps.version.outputs.VERSION }}-*.zip > checksums.txt
+
+      - name: Extract release notes
+        id: extract-release-notes
+        run: |
+          VERSION=${{ steps.version.outputs.VERSION }}
+          
+          # Extract changelog section for this version if CHANGELOG.md exists
+          if [ -f CHANGELOG.md ]; then
+            sed -n "/## \[$VERSION\]/,/## \[/p" CHANGELOG.md | sed '$d' > release-notes.md
+          fi
+          
+          # If release notes are empty or don't exist, don't use body_path
+          if [ ! -s release-notes.md ]; then
+            echo "use_notes=false" >> $GITHUB_OUTPUT
+          else
+            echo "use_notes=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          body_path: ${{ steps.extract-release-notes.outputs.use_notes == 'true' && 'release-notes.md' || '' }}
+          files: |
+            bin/auto-tools-${{ steps.version.outputs.VERSION }}-linux-amd64.tar.gz
+            bin/auto-tools-${{ steps.version.outputs.VERSION }}-darwin-amd64.tar.gz
+            bin/auto-tools-${{ steps.version.outputs.VERSION }}-darwin-arm64.tar.gz
+            bin/auto-tools-${{ steps.version.outputs.VERSION }}-windows-amd64.zip
+            bin/checksums.txt
+          draft: false
+          prerelease: ${{ contains(github.ref, 'alpha') || contains(github.ref, 'beta') || contains(github.ref, 'rc') }}
+          generate_release_notes: ${{ steps.extract-release-notes.outputs.use_notes != 'true' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

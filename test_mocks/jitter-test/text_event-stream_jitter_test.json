@@ -1,0 +1,30 @@
+{
+  "request": {
+    "request_id": "jitter-test-001",
+    "timestamp": "2025-11-24T10:00:00.000000Z",
+    "method": "GET",
+    "url": "http://api.example.com/sse-stream",
+    "headers": {
+      "Accept": "text/event-stream",
+      "x-mock-id": "jitter-test"
+    },
+    "body": ""
+  },
+  "response": {
+    "request_id": "jitter-test-001",
+    "timestamp": "2025-11-24T10:00:01.000000Z",
+    "status_code": 200,
+    "headers": {
+      "Content-Type": "text/event-stream",
+      "x-mock-id": "jitter-test"
+    },
+    "body": [
+      { "data": { "event": 1, "message": "first" }, "timestamp": 0.2 },
+      { "data": { "event": 2, "message": "second" }, "timestamp": 0.4 },
+      { "data": { "event": 3, "message": "third" }, "timestamp": 0.6 },
+      { "data": { "event": 4, "message": "fourth" }, "timestamp": 0.8 },
+      { "data": { "event": 5, "message": "fifth" }, "timestamp": 1.0 }
+    ],
+    "delay": 1.0
+  }
+}

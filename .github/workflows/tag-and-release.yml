@@ -1,0 +1,92 @@
+name: Tag and Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., v1.0.0)'
+        required: true
+        type: string
+      prerelease:
+        description: 'Mark as pre-release'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  tag-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate version format
+        run: |
+          if [[ ! "${{ inputs.version }}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$ ]]; then
+            echo "Error: Version must match format v*.*.* (e.g., v1.0.0 or v1.0.0-beta.1)"
+            exit 1
+          fi
+
+      - name: Check if tag exists
+        run: |
+          if git rev-parse "${{ inputs.version }}" >/dev/null 2>&1; then
+            echo "Error: Tag ${{ inputs.version }} already exists"
+            exit 1
+          fi
+
+      - name: Create and push tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "${{ inputs.version }}" -m "Release ${{ inputs.version }}"
+          git push origin "${{ inputs.version }}"
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+
+      - name: Build binaries for all platforms
+        run: make build-all
+
+      - name: Create archives
+        run: |
+          cd bin
+          # Linux
+          tar czf auto-tools-${{ inputs.version }}-linux-amd64.tar.gz auto-proxy-linux-amd64 auto-mock-server-linux-amd64
+          
+          # macOS amd64
+          tar czf auto-tools-${{ inputs.version }}-darwin-amd64.tar.gz auto-proxy-darwin-amd64 auto-mock-server-darwin-amd64
+          
+          # macOS arm64
+          tar czf auto-tools-${{ inputs.version }}-darwin-arm64.tar.gz auto-proxy-darwin-arm64 auto-mock-server-darwin-arm64
+          
+          # Windows
+          zip auto-tools-${{ inputs.version }}-windows-amd64.zip auto-proxy-windows-amd64.exe auto-mock-server-windows-amd64.exe
+
+      - name: Generate checksums
+        run: |
+          cd bin
+          sha256sum auto-tools-${{ inputs.version }}-*.tar.gz auto-tools-${{ inputs.version }}-*.zip > checksums.txt
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ inputs.version }}
+          name: Release ${{ inputs.version }}
+          files: |
+            bin/auto-tools-${{ inputs.version }}-linux-amd64.tar.gz
+            bin/auto-tools-${{ inputs.version }}-darwin-amd64.tar.gz
+            bin/auto-tools-${{ inputs.version }}-darwin-arm64.tar.gz
+            bin/auto-tools-${{ inputs.version }}-windows-amd64.zip
+            bin/checksums.txt
+          draft: false
+          prerelease: ${{ inputs.prerelease }}
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

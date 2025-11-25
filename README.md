@@ -192,7 +192,7 @@ auto-mock-server -mock-dir mocks -replay-timing -jitter 0.1
 
 ## 🧩 Scenario-Based Filtering
 
-Provide `-mock-config mock-example.yml` to switch the mock server from
+Provide `-mock-config tests/fixtures/mock-example.yml` to switch the mock server from
 `x-mock-id` lookups to declarative JSON body scenarios. Each scenario is
 evaluated in file order and the first match wins.
 
@@ -239,6 +239,9 @@ When scenarios are enabled:
 4. `delay` can be overridden per scenario:
    - For regular responses: directly replaces the delay before response
    - For SSE: all event timestamps are scaled proportionally (e.g., 2.0s → 1.0s = 0.5x scaling)
+5. `jitter` is applied to the total delay:
+   - For regular responses: adds ±N% variance to the delay
+   - For SSE: all event timestamps are scaled by the same jitter factor (e.g., 5% jitter = 0.95x to 1.05x scaling)
 
 Use `/__mock__/stats` and `/__mock__/list` to verify which scenarios are active.
 
@@ -387,6 +390,26 @@ curl -H "Accept: text/event-stream" \
      -H "x-mock-id: sse-test" \
      http://localhost:8000/events
 ```
+
+### SSE Timing Behavior
+
+For SSE responses, `delay` represents the **total duration** of the stream (last event timestamp).
+
+**Timing replay (`-replay-timing`):**
+- Events are sent at their recorded intervals
+- Each event has a `timestamp` relative to stream start
+- Original timing is preserved from recording
+
+**Jitter (`-jitter 0.1`):**
+- Applied **once** to the total delay, not per event
+- All event timestamps are scaled proportionally by the same factor
+- Example: 10% jitter means total duration varies ±10% (0.9x to 1.1x)
+- Ensures natural variance while maintaining relative event spacing
+
+**Delay override (in scenario config):**
+- Event timestamps are scaled proportionally when loading config
+- Example: 1.0s → 0.5s scales all timestamps by 0.5x (done once at startup)
+- Jitter is then applied to the overridden delay
 
 ## 🛠️ Development
 
