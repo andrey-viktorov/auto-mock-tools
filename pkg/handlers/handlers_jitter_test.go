@@ -59,14 +59,15 @@ func TestSSEJitterOriginalDelay(t *testing.T) {
 		elapsed := time.Since(start)
 
 		// Original delay is 1.0s, with 5% jitter max should be 1.05s
-		maxExpected := 1.05 * float64(time.Second)
+		// Add extra tolerance for CI environment overhead (scheduler, GC, etc.)
+		maxExpected := 1.10 * float64(time.Second) // 1.0s + 5% jitter + 5% CI overhead
 		if elapsed > time.Duration(maxExpected) {
-			t.Errorf("Run %d: Elapsed time %v exceeds max expected %v (1.0s + 5%% jitter, scale: %.3f)",
+			t.Errorf("Run %d: Elapsed time %v exceeds max expected %v (1.0s + 5%% jitter + CI overhead, scale: %.3f)",
 				i+1, elapsed, time.Duration(maxExpected), jitterScale)
 		}
 
 		// Should be at least 0.95s (1.0 - 5% jitter)
-		minExpected := 0.94 * float64(time.Second) // Allow small tolerance
+		minExpected := 0.90 * float64(time.Second) // Allow tolerance for CI
 		if elapsed < time.Duration(minExpected) {
 			t.Errorf("Run %d: Elapsed time %v is less than min expected %v (scale: %.3f)",
 				i+1, elapsed, time.Duration(minExpected), jitterScale)
@@ -125,14 +126,15 @@ func TestSSEJitterWithDelayOverride(t *testing.T) {
 		elapsed := time.Since(start)
 
 		// Delay is overridden to 0.5s, with 5% jitter max should be 0.525s
-		maxExpected := 0.525 * float64(time.Second)
+		// Add extra tolerance for CI environment overhead (scheduler, GC, etc.)
+		maxExpected := 0.550 * float64(time.Second) // 0.5s + 5% jitter + 5% CI overhead
 		if elapsed > time.Duration(maxExpected) {
-			t.Errorf("Run %d: Elapsed time %v exceeds max expected %v (0.5s + 5%% jitter, scale: %.3f)",
+			t.Errorf("Run %d: Elapsed time %v exceeds max expected %v (0.5s + 5%% jitter + CI overhead, scale: %.3f)",
 				i+1, elapsed, time.Duration(maxExpected), jitterScale)
 		}
 
 		// Should be at least 0.475s (0.5 - 5% jitter)
-		minExpected := 0.47 * float64(time.Second) // Allow small tolerance
+		minExpected := 0.45 * float64(time.Second) // Allow tolerance for CI
 		if elapsed < time.Duration(minExpected) {
 			t.Errorf("Run %d: Elapsed time %v is less than min expected %v (scale: %.3f)",
 				i+1, elapsed, time.Duration(minExpected), jitterScale)

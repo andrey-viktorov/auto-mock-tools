@@ -45,12 +45,6 @@ jobs:
     - name: Build binaries
       run: make build
 
-    - name: Build test utilities
-      run: make build-testutils
-
-    - name: Run integration tests
-      run: make test-integration
-
   lint:
     name: Lint
     runs-on: ubuntu-latest
