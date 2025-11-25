@@ -27,6 +27,7 @@ Fast mock server (~50K RPS) that serves recorded traffic with SSE support and ti
 - ⏱️ **Timing Replay** - Record and replay request/response timing with jitter
 - 🔒 **HTTPS/mTLS** - Support for HTTPS upstream and mutual TLS authentication
 - 📖 **Human-Readable** - Each mock file can be edited manually
+- 📝 **404 Logging** - Automatic logging of unmatched requests for mock creation
 - 🎭 **Complete Workflow** - Record with proxy → Replay with mock server
 
 ## 📁 Project Structure
@@ -184,6 +185,7 @@ auto-mock-server -mock-dir mocks -replay-timing -jitter 0.1
 ```
 -mock-dir string    Directory containing recorded mock files (default "mocks")
 -mock-config string YAML file that defines scenario filters; disables x-mock-id lookup when set
+-log-dir string     Directory to store 404 request/response logs (default "mock_log")
 -host string        Host to bind the server to (default "127.0.0.1")
 -port int           Port to bind the server to (default 8000)
 -replay-timing      Replay original request/response timing (latency)
@@ -356,6 +358,113 @@ For SSE responses, events are stored with timestamps:
   }
 }
 ```
+
+## 📝 404 Request Logging
+
+### Overview
+
+The mock server automatically logs all requests that result in 404 (no mock found) to help you identify missing mocks. Each 404 response is recorded in the same format as proxy recordings, making it easy to create new mocks from failed requests.
+
+### Usage
+
+```bash
+# Default: logs saved to mock_log/ directory
+auto-mock-server -mock-dir mocks
+
+# Custom log directory
+auto-mock-server -mock-dir mocks -log-dir failed_requests
+
+# Disable logging by using empty string
+auto-mock-server -mock-dir mocks -log-dir ""
+```
+
+### Log File Format
+
+Each 404 request is logged to a separate JSON file:
+
+```
+mock_log/
+  application_json_20251125_174411_d214ec70.json
+  text_html_20251125_174315_cd06f8ed.json
+```
+
+**File naming:** `<content-type>_<timestamp>_<random>.json` (based on `Accept` header)
+
+**File content:**
+```json
+{
+  "request": {
+    "request_id": "20251125174411.913912",
+    "timestamp": "2025-11-25T14:44:11.913976Z",
+    "method": "DELETE",
+    "url": "/api/test/delete/456",
+    "headers": {
+      "Accept": "application/json",
+      "x-mock-id": "test-scenario"
+    },
+    "body": {"id": 456}
+  },
+  "response": {
+    "request_id": "20251125174411.913912",
+    "timestamp": "2025-11-25T14:44:11.913985Z",
+    "status_code": 404,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {"error": "No mock found"},
+    "delay": 0
+  }
+}
+```
+
+### Use Cases
+
+**1. Debugging missing mocks:**
+```bash
+# Start mock server with logging
+auto-mock-server -mock-dir mocks -log-dir debug_logs
+
+# Run your tests
+curl http://localhost:8000/api/new-endpoint
+
+# Check logged requests
+ls -lt debug_logs/
+cat debug_logs/application_json_*.json
+```
+
+**2. Creating mocks from failed requests:**
+```bash
+# After identifying missing endpoints in logs,
+# record them with the proxy:
+auto-proxy -target http://api.example.com -log-dir mocks
+
+# Make the missing request through proxy
+curl http://localhost:8080/api/new-endpoint
+
+# Restart mock server with new mocks
+auto-mock-server -mock-dir mocks
+```
+
+**3. Monitoring test coverage:**
+```bash
+# Clear logs before test run
+rm -rf mock_log
+
+# Run tests against mock server
+make test
+
+# Review any missing mocks
+find mock_log -name '*.json' | wc -l
+```
+
+### Implementation Details
+
+- Logs are written asynchronously (non-blocking)
+- Failed logging doesn't affect request handling
+- Directory created automatically if it doesn't exist
+- Same file format as proxy recordings for consistency
+- `x-mock-id` header preserved in logs if present
+- Content-Type derived from `Accept` header for file naming
 
 ## 🌊 SSE (Server-Sent Events) Support
 

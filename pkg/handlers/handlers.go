@@ -108,7 +108,7 @@ var (
 
 // MockHandler handles all requests and returns mock responses based on the storage.
 // Zero allocations: works with []byte directly, no string conversions.
-func MockHandler(store *storage.MockStorage) fasthttp.RequestHandler {
+func MockHandler(store *storage.MockStorage, logger *storage.NotFoundLogger) fasthttp.RequestHandler {
 	defaultMockIDBytes := []byte(defaultMockID)
 	defaultContentTypeBytes := []byte(defaultContentType)
 
@@ -146,6 +146,13 @@ func MockHandler(store *storage.MockStorage) fasthttp.RequestHandler {
 			ctx.SetStatusCode(fasthttp.StatusNotFound)
 			ctx.Response.Header.SetBytesKV(headerContentType, defaultContentTypeBytes)
 			ctx.SetBody(errorNotFound)
+			// Log 404 response if logger is configured
+			if logger != nil {
+				if err := logger.LogNotFound(ctx); err != nil {
+					// Log error but don't fail the request
+					// Error logging to stderr is handled by the logger
+				}
+			}
 			return
 		}
 
@@ -243,10 +250,22 @@ func ListMocksHandler(store *storage.MockStorage) fasthttp.RequestHandler {
 }
 
 // Router routes requests to appropriate handlers.
-func Router(store *storage.MockStorage) fasthttp.RequestHandler {
+func Router(store *storage.MockStorage, logDir string) fasthttp.RequestHandler {
 	statsPath := []byte("/__mock__/stats")
 	listPath := []byte("/__mock__/list")
 	methodGET := []byte("GET")
+
+	// Create logger for 404 responses
+	var logger *storage.NotFoundLogger
+	if logDir != "" {
+		var err error
+		logger, err = storage.NewNotFoundLogger(logDir)
+		if err != nil {
+			// Log error but continue without logging
+			// This allows the server to start even if log directory creation fails
+			logger = nil
+		}
+	}
 
 	return func(ctx *fasthttp.RequestCtx) {
 		pathBytes := ctx.Path()
@@ -264,6 +283,6 @@ func Router(store *storage.MockStorage) fasthttp.RequestHandler {
 		}
 
 		// Default to mock handler
-		MockHandler(store)(ctx)
+		MockHandler(store, logger)(ctx)
 	}
 }

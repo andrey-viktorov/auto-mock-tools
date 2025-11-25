@@ -18,6 +18,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Method-based filtering for mock responses
 - Content-Type negotiation via Accept headers
 - Special endpoints for stats and mock listing
+- **404 request logging** - Mock server automatically logs unmatched requests to JSON files
+  - Configurable log directory via `-log-dir` flag (default: `mock_log`)
+  - Same file format as proxy recordings for consistency
+  - Non-blocking logging that doesn't affect request handling
+  - Helps identify missing mocks during development and testing
 - Comprehensive test suite with integration tests
 - Cross-platform build support (Linux, macOS, Windows)
 - Zero-allocation hot path for mock serving

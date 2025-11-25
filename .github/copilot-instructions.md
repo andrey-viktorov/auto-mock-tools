@@ -20,6 +20,7 @@ High-performance HTTP recording proxy and mock server built with Go and fasthttp
 - **Entry:** `cmd/mock/main.go` - CLI parsing, storage initialization
 - **Storage:** `pkg/storage/storage.go` - In-memory index, zero-allocation lookups, pre-serialized responses
 - **Handlers:** `pkg/handlers/handlers.go` - Request routing, SSE streaming with pooled writers
+- **Logger:** `pkg/storage/logger.go` - Logs 404 responses to JSON files for debugging
 - **Indexing:** `path|mockID|contentType` composite key for O(1) lookups
 
 ### 3. File Format
@@ -92,7 +93,8 @@ make test-all           # Unit + integration
 
 Both tools use consistent flag naming:
 - `-host` / `-port` - Server binding (default: 127.0.0.1:8080 for proxy, :8000 for mock)
-- `-log-dir` / `-mock-dir` - File storage directory
+- `-log-dir` - Proxy: directory for recorded mocks; Mock: directory for 404 logs (default: "mock_log")
+- `-mock-dir` - Mock server: directory to read mocks from (default: "mocks")
 - `-target` - Proxy target URL (required)
 - `-replay-timing` / `-jitter` - Mock server timing control
 
@@ -105,6 +107,22 @@ Both tools use consistent flag naming:
    - Start test servers (SSE, mTLS)
    - Run proxy → record → mock server workflow
    - Verify output
+
+## 404 Request Logging (Mock Server)
+
+The mock server automatically logs all 404 (mock not found) responses:
+- **Purpose:** Help identify missing mocks during development/testing
+- **Location:** Configured via `-log-dir` flag (default: `mock_log/`)
+- **Format:** Same as proxy recordings - one JSON file per request with request + 404 response
+- **Filename:** `<content-type>_<timestamp>_<random>.json` (based on Accept header)
+- **Implementation:** `pkg/storage/logger.go` (`NotFoundLogger`), called from `pkg/handlers/handlers.go`
+- **Behavior:** Non-blocking; failed logging doesn't affect request handling
+
+**Use cases:**
+- Debug missing mocks during test runs
+- Identify which endpoints need recording
+- Monitor test coverage gaps
+- Create new mocks from logged requests
 
 ## Special Endpoints (Mock Server)
 

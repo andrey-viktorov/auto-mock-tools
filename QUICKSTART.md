@@ -129,6 +129,24 @@ curl http://localhost:8000/__mock__/stats
 curl http://localhost:8000/__mock__/list
 ```
 
+### Debug Missing Mocks
+
+Mock server automatically logs 404 responses to help identify missing mocks:
+
+```bash
+# Start mock server (logs to mock_log/ by default)
+auto-mock-server -mock-dir mocks
+
+# Make a request that doesn't have a mock
+curl http://localhost:8000/api/missing-endpoint
+
+# Check the logged request
+ls -lt mock_log/
+cat mock_log/application_json_*.json
+```
+
+The logged file contains both the request and 404 response, making it easy to record the missing mock.
+
 ## Common Use Cases
 
 ### API Testing

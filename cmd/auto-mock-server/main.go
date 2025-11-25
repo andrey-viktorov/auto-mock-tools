@@ -17,6 +17,7 @@ func main() {
 	// Define CLI flags
 	mockDir := flag.String("mock-dir", "mocks", "Directory containing recorded mock files")
 	scenarioConfig := flag.String("mock-config", "", "YAML file describing scenario filters and responses")
+	logDir := flag.String("log-dir", "mock_log", "Directory to store 404 request/response logs")
 	host := flag.String("host", "127.0.0.1", "Host to bind the server to")
 	port := flag.Int("port", 8000, "Port to bind the server to")
 	replayTiming := flag.Bool("replay-timing", false, "Replay original request/response timing (latency)")
@@ -61,10 +62,11 @@ func main() {
 	fmt.Printf("\n🌐 Server running at http://%s\n", addr)
 	fmt.Printf("📈 Stats endpoint: http://%s/__mock__/stats\n", addr)
 	fmt.Printf("📋 List endpoint: http://%s/__mock__/list\n", addr)
+	fmt.Printf("📝 404 logs directory: %s\n", *logDir)
 	fmt.Println("\nPress Ctrl+C to stop")
 
 	// Create router
-	handler := handlers.Router(store)
+	handler := handlers.Router(store, *logDir)
 
 	// Create server
 	server := &fasthttp.Server{

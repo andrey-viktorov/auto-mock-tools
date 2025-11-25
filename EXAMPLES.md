@@ -453,3 +453,62 @@ curl http://localhost:8000/__mock__/list | jq .
 # Check stats
 curl http://localhost:8000/__mock__/stats | jq .
 ```
+
+### Debug Missing Mocks (404 Logging)
+
+The mock server automatically logs all 404 responses to help identify missing mocks:
+
+```bash
+# Start mock server with default log directory (mock_log/)
+auto-mock-server -mock-dir mocks
+
+# Or specify custom log directory
+auto-mock-server -mock-dir mocks -log-dir debug_logs
+
+# Make requests to test your application
+curl http://localhost:8000/api/users/1
+curl http://localhost:8000/api/posts
+
+# Check for 404s
+ls -lt mock_log/
+cat mock_log/application_json_20251125_174411_*.json | jq .
+```
+
+**Example 404 log file:**
+
+```json
+{
+  "request": {
+    "request_id": "20251125174411.913912",
+    "timestamp": "2025-11-25T14:44:11.913976Z",
+    "method": "DELETE",
+    "url": "/api/test/delete/456",
+    "headers": {
+      "Accept": "application/json",
+      "x-mock-id": "test-scenario"
+    },
+    "body": {"id": 456}
+  },
+  "response": {
+    "status_code": 404,
+    "headers": {"Content-Type": "application/json"},
+    "body": {"error": "No mock found"},
+    "delay": 0
+  }
+}
+```
+
+**Create missing mocks from logs:**
+
+```bash
+# After identifying missing endpoints in 404 logs,
+# record them with the proxy:
+auto-proxy -target http://api.example.com -log-dir mocks
+
+# Make the missing request through proxy
+curl -H "x-mock-id: test-scenario" \
+     -X DELETE http://localhost:8080/api/test/delete/456
+
+# Restart mock server with new mocks
+auto-mock-server -mock-dir mocks
+```

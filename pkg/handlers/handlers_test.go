@@ -13,7 +13,7 @@ func BenchmarkMockHandler(b *testing.B) {
 		b.Fatalf("Failed to create storage: %v", err)
 	}
 
-	handler := MockHandler(store)
+	handler := MockHandler(store, nil)
 
 	ctx := &fasthttp.RequestCtx{}
 	ctx.Request.SetRequestURI("/users/1")
@@ -39,7 +39,7 @@ func BenchmarkSSEHandlerNoTiming(b *testing.B) {
 	// Test without timing replay (production-like for instant mode)
 	store.SetTimingConfig(false, 0.0)
 
-	handler := MockHandler(store)
+	handler := MockHandler(store, nil)
 
 	ctx := &fasthttp.RequestCtx{}
 	ctx.Request.SetRequestURI("/events")
@@ -65,7 +65,7 @@ func BenchmarkSSEHandlerWithTiming(b *testing.B) {
 	// Enable timing replay to see allocation cost
 	store.SetTimingConfig(true, 0.0)
 
-	handler := MockHandler(store)
+	handler := MockHandler(store, nil)
 
 	ctx := &fasthttp.RequestCtx{}
 	ctx.Request.SetRequestURI("/events")
@@ -88,7 +88,7 @@ func BenchmarkRouter(b *testing.B) {
 		b.Fatalf("Failed to create storage: %v", err)
 	}
 
-	handler := Router(store)
+	handler := Router(store, "")
 
 	ctx := &fasthttp.RequestCtx{}
 	ctx.Request.SetRequestURI("/users/1")
@@ -136,7 +136,7 @@ func TestMockHandlerScenarioMode(t *testing.T) {
 		t.Fatalf("Failed to load scenarios: %v", err)
 	}
 
-	handler := MockHandler(store)
+	handler := MockHandler(store, nil)
 	ctx := &fasthttp.RequestCtx{}
 	ctx.Request.SetRequestURI("/api/v1/status")
 	ctx.Request.Header.SetMethod("POST")
