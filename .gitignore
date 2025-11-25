@@ -36,3 +36,5 @@ testutils/bin/
 .DS_Store
 Thumbs.db
 tasks
+
+*/node_modules

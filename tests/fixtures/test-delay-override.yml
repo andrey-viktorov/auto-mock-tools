@@ -1,0 +1,7 @@
+scenarios:
+  - name: Test delay override
+    method: GET
+    path: /api/test-delay
+    response:
+      file: ../../test_mocks/default/application_json_20251122_233842_059b6fbd.json
+      delay: 0.2
