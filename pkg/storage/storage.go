@@ -79,12 +79,40 @@ func makeIndexKeyFromBytes(path, mockID, contentType []byte) IndexKey {
 	return key
 }
 
+// makePathMockIDKey creates an index key from path and mockID only (no content-type).
+func makePathMockIDKey(path, mockID string) IndexKey {
+	// Format: "path|mockID"
+	return IndexKey(path + "|" + mockID)
+}
+
+// makePathMockIDKeyFromBytes creates an index key from byte slices for path and mockID only.
+func makePathMockIDKeyFromBytes(path, mockID []byte) IndexKey {
+	// Get pooled buffer
+	bufPtr := keyBufPool.Get().(*[]byte)
+	buf := (*bufPtr)[:0] // Reset length, keep capacity
+
+	// Build key in buffer
+	buf = append(buf, path...)
+	buf = append(buf, '|')
+	buf = append(buf, mockID...)
+
+	// Convert to string
+	key := IndexKey(string(buf))
+
+	// Return buffer to pool
+	keyBufPool.Put(bufPtr)
+
+	return key
+}
+
 // MockStorage handles loading and searching mock responses.
 type MockStorage struct {
-	BaseDir        string
-	Responses      map[IndexKey][]*MockResponse
-	cachedStats    []byte // Pre-serialized stats JSON
-	cachedMockList []byte // Pre-serialized mock list JSON
+	BaseDir   string
+	Responses map[IndexKey][]*MockResponse
+	// ResponsesByPathMockID is indexed by "path|mockID" for Accept: */* lookups
+	ResponsesByPathMockID map[IndexKey][]*MockResponse
+	cachedStats           []byte // Pre-serialized stats JSON
+	cachedMockList        []byte // Pre-serialized mock list JSON
 
 	// Timing configuration
 	ReplayTiming bool
@@ -108,8 +136,9 @@ func (s *MockStorage) SetTimingConfig(replayTiming bool, jitter float64) {
 // NewMockStorage creates a new MockStorage instance.
 func NewMockStorage(baseDir string) (*MockStorage, error) {
 	storage := &MockStorage{
-		BaseDir:   baseDir,
-		Responses: make(map[IndexKey][]*MockResponse),
+		BaseDir:               baseDir,
+		Responses:             make(map[IndexKey][]*MockResponse),
+		ResponsesByPathMockID: make(map[IndexKey][]*MockResponse),
 	}
 
 	if err := storage.loadResponses(); err != nil {
@@ -157,8 +186,13 @@ func (s *MockStorage) loadResponses() error {
 				continue
 			}
 
+			// Index by full key (path|mockID|contentType)
 			key := makeIndexKey(mockResponse.Path, mockResponse.MockID, mockResponse.ContentType)
 			s.Responses[key] = append(s.Responses[key], mockResponse)
+
+			// Also index by path|mockID for Accept: */* lookups
+			pathMockIDKey := makePathMockIDKey(mockResponse.Path, mockResponse.MockID)
+			s.ResponsesByPathMockID[pathMockIDKey] = append(s.ResponsesByPathMockID[pathMockIDKey], mockResponse)
 		}
 	}
 
@@ -345,6 +379,70 @@ func (s *MockStorage) FindResponseBytes(pathBytes, mockIDBytes, contentTypeBytes
 		}
 	}
 
+	return nil
+}
+
+// FindResponseBytesAnyContentType finds a mock response by path and mock_id, accepting any content_type.
+// Returns the first matching response for the given method.
+// Zero-allocation implementation: parses key inline without string splits.
+func (s *MockStorage) FindResponseBytesAnyContentType(pathBytes, mockIDBytes, methodBytes []byte) *MockResponse {
+	// Build prefix for direct key matching: "path|mockID|"
+	// This allows us to check if any key starts with this prefix
+	bufPtr := keyBufPool.Get().(*[]byte)
+	buf := (*bufPtr)[:0]
+
+	buf = append(buf, pathBytes...)
+	buf = append(buf, '|')
+	buf = append(buf, mockIDBytes...)
+	buf = append(buf, '|')
+
+	prefix := buf
+	prefixLen := len(prefix)
+
+	// Iterate through all responses to find keys with matching prefix
+	for key, candidates := range s.Responses {
+		if len(candidates) == 0 {
+			continue
+		}
+
+		// Check if key starts with our prefix (path|mockID|)
+		// This avoids string allocation and split operations
+		keyStr := string(key)
+		if len(keyStr) < prefixLen {
+			continue
+		}
+
+		// Compare prefix byte-by-byte to avoid allocation
+		match := true
+		for i := 0; i < prefixLen; i++ {
+			if keyStr[i] != prefix[i] {
+				match = false
+				break
+			}
+		}
+
+		if !match {
+			continue
+		}
+
+		// Found matching path and mockID, now filter by method
+		if len(methodBytes) == 0 {
+			keyBufPool.Put(bufPtr)
+			return candidates[0]
+		}
+
+		for _, c := range candidates {
+			if equalFoldBytes(c.MethodBytes, methodBytes) {
+				keyBufPool.Put(bufPtr)
+				return c
+			}
+		}
+
+		// If method didn't match but path/mockID did, try next content-type
+		// Continue to check other content-types for same path/mockID
+	}
+
+	keyBufPool.Put(bufPtr)
 	return nil
 }
 

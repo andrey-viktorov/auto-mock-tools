@@ -1,0 +1,26 @@
+scenarios:
+  # Scenario with filter - should match only when filter passes
+  - name: Filtered Scenario
+    method: GET
+    path: /api/test
+    filter:
+      body:
+        eq:
+          field: status
+          value: active
+    response:
+      file: ../../test_mocks/api-v1/application_json_20251122_233842_3121ee87.json
+
+  # Scenario without filter - should match any body for this path/method
+  - name: No Filter Scenario
+    method: GET
+    path: /api/test
+    response:
+      file: ../../test_mocks/api-v2/application_json_20251122_233842_2040ed72.json
+
+  # Scenario without filter for different path
+  - name: Another No Filter
+    method: POST
+    path: /api/other
+    response:
+      file: ../../test_mocks/default/application_json_20251122_233842_059b6fbd.json

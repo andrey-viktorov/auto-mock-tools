@@ -215,3 +215,123 @@ func TestSSEDelayOverride(t *testing.T) {
 		}
 	}
 }
+
+func TestScenarioWithoutFilter(t *testing.T) {
+	store, err := NewMockStorage("../../test_mocks")
+	if err != nil {
+		t.Fatalf("Failed to create storage: %v", err)
+	}
+
+	if err := store.LoadScenarioConfig("../../tests/fixtures/test-scenario-no-filter.yml"); err != nil {
+		t.Fatalf("Failed to load scenarios: %v", err)
+	}
+
+	// Test 1: Body matches filter - should return first scenario
+	matchingBody := []byte(`{"status":"active"}`)
+	resp := store.MatchScenarioResponse([]byte("/api/test"), []byte("GET"), matchingBody)
+	if resp == nil {
+		t.Fatal("Expected scenario match for matching filter")
+	}
+	if resp.MockID != "Filtered Scenario" {
+		t.Fatalf("Expected 'Filtered Scenario', got %s", resp.MockID)
+	}
+
+	// Test 2: Body doesn't match filter - should fall back to no-filter scenario
+	nonMatchingBody := []byte(`{"status":"inactive"}`)
+	resp = store.MatchScenarioResponse([]byte("/api/test"), []byte("GET"), nonMatchingBody)
+	if resp == nil {
+		t.Fatal("Expected fallback to no-filter scenario")
+	}
+	if resp.MockID != "No Filter Scenario" {
+		t.Fatalf("Expected 'No Filter Scenario', got %s", resp.MockID)
+	}
+
+	// Test 3: Empty body should also match no-filter scenario
+	emptyBody := []byte(`{}`)
+	resp = store.MatchScenarioResponse([]byte("/api/test"), []byte("GET"), emptyBody)
+	if resp == nil {
+		t.Fatal("Expected no-filter scenario to match empty body")
+	}
+	if resp.MockID != "No Filter Scenario" {
+		t.Fatalf("Expected 'No Filter Scenario' for empty body, got %s", resp.MockID)
+	}
+
+	// Test 4: Different path with no filter
+	anyBody := []byte(`{"any":"data"}`)
+	resp = store.MatchScenarioResponse([]byte("/api/other"), []byte("POST"), anyBody)
+	if resp == nil {
+		t.Fatal("Expected scenario match for /api/other")
+	}
+	if resp.MockID != "Another No Filter" {
+		t.Fatalf("Expected 'Another No Filter', got %s", resp.MockID)
+	}
+
+	// Test 5: Wrong method should not match
+	resp = store.MatchScenarioResponse([]byte("/api/other"), []byte("GET"), anyBody)
+	if resp != nil {
+		t.Fatal("Expected nil for wrong method")
+	}
+
+	// Test 6: Non-existent path should return nil
+	resp = store.MatchScenarioResponse([]byte("/api/nonexistent"), []byte("GET"), anyBody)
+	if resp != nil {
+		t.Fatal("Expected nil for non-existent path")
+	}
+}
+
+func TestFindResponseBytesAnyContentType(t *testing.T) {
+	store, err := NewMockStorage("../../test_mocks")
+	if err != nil {
+		t.Fatalf("Failed to create storage: %v", err)
+	}
+
+	// Test finding response with any content-type
+	resp := store.FindResponseBytesAnyContentType([]byte("/users/1"), []byte("default"), []byte("GET"))
+	if resp == nil {
+		t.Fatal("Expected to find response with any content-type")
+	}
+
+	// Should return a response regardless of content-type
+	if resp.Path != "/users/1" {
+		t.Fatalf("Expected path /users/1, got %s", resp.Path)
+	}
+	if resp.MockID != "default" {
+		t.Fatalf("Expected mock_id default, got %s", resp.MockID)
+	}
+
+	// Test not finding a response
+	resp = store.FindResponseBytesAnyContentType([]byte("/nonexistent"), []byte("default"), []byte("GET"))
+	if resp != nil {
+		t.Fatal("Expected nil for nonexistent path")
+	}
+
+	// Test with different mock_id
+	resp = store.FindResponseBytesAnyContentType([]byte("/data/2"), []byte("api-v1"), []byte("GET"))
+	if resp == nil {
+		t.Fatal("Expected to find response for api-v1 mock_id")
+	}
+	if resp.MockID != "api-v1" {
+		t.Fatalf("Expected mock_id api-v1, got %s", resp.MockID)
+	}
+}
+
+func BenchmarkFindResponseBytesAnyContentType(b *testing.B) {
+	store, err := NewMockStorage("../../test_mocks")
+	if err != nil {
+		b.Fatalf("Failed to create storage: %v", err)
+	}
+
+	pathBytes := []byte("/users/1")
+	mockIDBytes := []byte("default")
+	methodBytes := []byte("GET")
+
+	b.ResetTimer()
+	b.ReportAllocs()
+
+	for i := 0; i < b.N; i++ {
+		resp := store.FindResponseBytesAnyContentType(pathBytes, mockIDBytes, methodBytes)
+		if resp == nil {
+			b.Fatal("Expected response, got nil")
+		}
+	}
+}

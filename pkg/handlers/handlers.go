@@ -127,8 +127,12 @@ func MockHandler(store *storage.MockStorage, logger *storage.NotFoundLogger) fas
 			}
 
 			acceptBytes := ctx.Request.Header.PeekBytes(headerAccept)
-			if len(acceptBytes) == 0 || bytes.Equal(acceptBytes, acceptAny) {
+			if len(acceptBytes) == 0 {
 				acceptBytes = defaultContentTypeBytes
+				mockResponse = store.FindResponseBytes(pathBytes, mockIDBytes, acceptBytes, methodBytes)
+			} else if bytes.Equal(acceptBytes, acceptAny) {
+				// Accept: */* means any content-type is acceptable
+				mockResponse = store.FindResponseBytesAnyContentType(pathBytes, mockIDBytes, methodBytes)
 			} else {
 				if idx := bytes.IndexByte(acceptBytes, ','); idx >= 0 {
 					acceptBytes = acceptBytes[:idx]
@@ -137,9 +141,8 @@ func MockHandler(store *storage.MockStorage, logger *storage.NotFoundLogger) fas
 					acceptBytes = acceptBytes[:idx]
 				}
 				acceptBytes = trimSpaceASCII(acceptBytes)
+				mockResponse = store.FindResponseBytes(pathBytes, mockIDBytes, acceptBytes, methodBytes)
 			}
-
-			mockResponse = store.FindResponseBytes(pathBytes, mockIDBytes, acceptBytes, methodBytes)
 		}
 
 		if mockResponse == nil {
